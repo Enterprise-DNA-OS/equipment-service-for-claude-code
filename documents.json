@@ -1,11 +1,70 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
-    "file": "name",
+    "name": "service-report",
+    "title": "Service report",
+    "for_each": "select id,code from jobs where status in ('done','invoiced') and completed_at>=now()-interval '30 days'",
+    "file": "code",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      {
+        "title": "Job",
+        "sql": "select j.code,j.kind,c.name as customer,s.name as site,j.reported_at,j.arrived_at,j.completed_at,t.name as technician from jobs j join customers c on c.id=j.customer_id left join sites s on s.id=j.site_id left join technicians t on t.id=j.technician_id where j.id=$1"
+      },
+      {
+        "title": "Unit",
+        "sql": "select e.code,e.serial,e.model,j.hour_meter as hours_at_visit,e.warranty_ends_on from jobs j join equipment e on e.id=j.equipment_id where j.id=$1"
+      },
+      {
+        "title": "Fault and work done",
+        "sql": "select description as reported,resolution as work_done,round(labour_minutes/60.0,2) as labour_hours,checklist_done from jobs where id=$1"
+      },
+      {
+        "title": "Parts fitted",
+        "sql": "select part_number,description,qty from parts_used where job_id=$1 order by code"
+      }
+    ]
+  },
+  {
+    "name": "contract-schedule",
+    "title": "Service agreement schedule",
+    "for_each": "select id,code from contracts where status='active'",
+    "file": "code",
+    "sections": [
+      {
+        "title": "Agreement",
+        "sql": "select code,name,customer,kind,starts_on,ends_on,response_hours,annual_value_cents from contract_status where id=$1"
+      },
+      {
+        "title": "What it covers",
+        "sql": "select case when covers_labour then 'Yes' else 'No' end as labour,case when covers_parts then 'Yes' else 'No' end as parts,renewal_notice_days from contracts where id=$1"
+      },
+      {
+        "title": "Units covered",
+        "sql": "select e.code,e.serial,e.model,s.name as site from contract_equipment ce join equipment e on e.id=ce.equipment_id left join sites s on s.id=e.site_id where ce.contract_id=$1 order by e.code"
+      },
+      {
+        "title": "Planned maintenance schedule",
+        "sql": "select p.unit,p.task,p.interval_days,p.interval_hours,p.next_due_on from pm_due p join contract_equipment ce on ce.equipment_id=p.equipment_id where ce.contract_id=$1 order by p.unit"
+      }
+    ]
+  },
+  {
+    "name": "unit-history",
+    "title": "Equipment service history",
+    "for_each": "select id,code from equipment where status<>'removed'",
+    "file": "code",
+    "sections": [
+      {
+        "title": "Unit",
+        "sql": "select code,serial,maker,model,customer,site,installed_on,warranty_ends_on,hour_meter,hours_read_on,inspection_kind,inspection_due from equipment_status where id=$1"
+      },
+      {
+        "title": "Planned maintenance",
+        "sql": "select task,last_done_on,last_done_hours,next_due_on,hours_left from pm_due where equipment_id=$1"
+      },
+      {
+        "title": "Service history",
+        "sql": "select j.code,j.kind,(j.completed_at at time zone 'UTC')::date as done_on,j.hour_meter,t.name as technician,j.resolution from jobs j left join technicians t on t.id=j.technician_id where j.equipment_id=$1 and j.status in ('done','invoiced') order by j.completed_at desc"
+      }
     ]
   }
 ]

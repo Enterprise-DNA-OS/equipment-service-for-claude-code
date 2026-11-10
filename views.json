@@ -1,13 +1,72 @@
 [
   {
     "name": "week",
-    "title": "This week",
-    "subtitle": "Equipment Service for Claude Code: what needs attention, rendered by npm run view",
+    "title": "Monday service review",
+    "subtitle": "Recorded times are UTC. A record check, not a safety sign-off on any machine.",
     "sections": [
       {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
+        "title": "Breakdowns on the clock",
+        "note": "Open breakdowns under a contract with a response time and nobody on site yet, soonest deadline first.",
+        "sql": "select code,priority,customer,unit,coalesce(technician,'unassigned') as technician,to_char(reported_at at time zone 'UTC','YYYY-MM-DD HH24:MI') as reported_utc,to_char(due_at at time zone 'UTC','YYYY-MM-DD HH24:MI') as due_utc,response from job_response where status in ('open','scheduled','in_progress','waiting_parts') and due_at is not null and arrived_at is null order by due_at"
+      },
+      {
+        "title": "Planned maintenance due and not booked",
+        "sql": "select code as plan,unit,customer,task,next_due_on,days_left,hours_left from pm_due where open_job is null and ((days_left is not null and days_left<=14) or (hours_left is not null and hours_left<=50)) order by days_left nulls last"
+      },
+      {
+        "title": "Statutory inspections due in 30 days",
+        "sql": "select code as unit,customer,inspection_kind,inspection_due from equipment_status where status<>'removed' and inspection_kind<>'' and (inspection_due is null or inspection_due<=current_date+30) order by inspection_due nulls first"
+      },
+      {
+        "title": "Jobs stuck or waiting on parts",
+        "sql": "select j.code,j.status,c.name as customer,current_date-(j.reported_at at time zone 'UTC')::date as days_open,j.description from jobs j join customers c on c.id=j.customer_id where j.status in ('open','scheduled','in_progress','waiting_parts') and (j.status='waiting_parts' or j.reported_at<now()-interval '7 days') order by days_open desc"
+      },
+      {
+        "title": "Done and not invoiced",
+        "sql": "select j.code,c.name as customer,j.kind,(j.completed_at at time zone 'UTC')::date as completed_on from jobs j join customers c on c.id=j.customer_id where j.status='done' and j.chargeable order by completed_on"
+      }
+    ]
+  },
+  {
+    "name": "contracts",
+    "title": "Service contracts",
+    "subtitle": "What each agreement earns against what it cost to service over the last 12 months.",
+    "sections": [
+      {
+        "title": "Renewals in the notice window",
+        "sql": "select code,customer,name,ends_on,days_left,annual_value_cents,units from contract_status where status='active' and days_left<=renewal_notice_days order by days_left"
+      },
+      {
+        "title": "Margin by contract",
+        "note": "Labour at each technician's cost rate, parts at cost, parts recovered from a maker left out.",
+        "sql": "select code,customer,annual_value_cents,labour_cost_cents,parts_cost_cents,annual_value_cents-labour_cost_cents-parts_cost_cents as margin_cents from contract_status where status='active' order by margin_cents"
+      },
+      {
+        "title": "Response times, last 90 days",
+        "sql": "select contract,count(*) as breakdowns,count(*) filter (where response='met') as met,count(*) filter (where response like 'missed%') as missed from job_response where response<>'no promise' and reported_at>=now()-interval '90 days' group by contract order by missed desc"
+      },
+      {
+        "title": "Units not on any contract",
+        "sql": "select code as unit,serial,kind,customer from equipment_status where status<>'removed' and contract is null order by customer,code"
+      }
+    ]
+  },
+  {
+    "name": "warranty",
+    "title": "Warranty money",
+    "subtitle": "Claims to lodge, claims with the maker, and what each maker pays back.",
+    "sections": [
+      {
+        "title": "Repairs under warranty with no claim",
+        "sql": "select j.code as job,e.code as unit,m.name as maker,(j.completed_at at time zone 'UTC')::date as repaired_on,(j.completed_at at time zone 'UTC')::date+m.claim_window_days-current_date as days_to_lodge from jobs j join equipment e on e.id=j.equipment_id join makers m on m.id=e.maker_id where j.status in ('done','invoiced') and j.kind in ('breakdown','warranty') and e.warranty_ends_on>=(j.reported_at at time zone 'UTC')::date and not exists (select 1 from warranty_claims w where w.job_id=j.id) order by days_to_lodge"
+      },
+      {
+        "title": "Open claims",
+        "sql": "select code,status,maker,unit,claim_cents,submitted_on,days_to_lodge,maker_reference from claim_status where status in ('draft','submitted','approved') order by status,submitted_on"
+      },
+      {
+        "title": "Recovery by maker",
+        "sql": "select maker,count(*) as claims,sum(claim_cents) as claimed_cents,coalesce(sum(paid_cents) filter (where status='paid'),0) as paid_cents,count(*) filter (where status='rejected') as rejected from claim_status group by maker order by claimed_cents desc"
       }
     ]
   }

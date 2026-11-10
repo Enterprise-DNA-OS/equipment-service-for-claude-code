@@ -1,0 +1,3 @@
+"Id","Name","ContractNumber","AccountId","StartDate","EndDate","Kind"
+"810Hs00000ImpK1AAB","Yard fleet full service","00000101","001Hs00000ImpA1AAB","2026-01-01","2026-12-31","full_service"
+"810Hs00000ImpK2AAB","Cold room maintenance","00000102","001Hs00000ImpA2AAB","2025-07-01","2026-06-30","planned_maintenance"

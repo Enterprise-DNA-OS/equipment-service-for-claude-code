@@ -1,0 +1,12 @@
+[
+  { "question": "Which service contracts cost us more in labour and parts this year than the customer pays?", "command": "contract-margin" },
+  { "question": "Which repairs on machines still under the maker's warranty have no claim lodged, and how many days are left to lodge each?", "command": "warranty-unclaimed" },
+  { "question": "Which breakdowns did we reach after the response time the contract promises, and which customers keep getting the late visits?", "command": "response-times" },
+  { "question": "Which machines are past their planned service by date or by run hours, and which of those has nobody booked?", "command": "pm-due" },
+  { "question": "Which customers have a contract with us but own machines that are not on it?", "command": "uncovered" },
+  { "question": "Which machines have broken down three or more times in a year, and which of those are still in warranty?", "command": "repeat-breakdowns" },
+  { "question": "Which technicians are booked on work their licence or ticket no longer covers?", "command": "compliance" },
+  { "question": "What share of each maker's warranty claims gets rejected, and why?", "command": "warranty-recovery" },
+  { "question": "Which contracts end inside their renewal notice window, and which ended but are still being serviced?", "command": "renewals-due" },
+  { "question": "Which chargeable jobs are done and still not invoiced?", "command": "unbilled" }
+]

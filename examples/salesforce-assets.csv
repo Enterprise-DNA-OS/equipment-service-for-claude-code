@@ -1,0 +1,4 @@
+"Id","Name","SerialNumber","AccountId","InstallDate","Status","Kind","WarrantyEndDate"
+"02iHs00000ImpU1AAB","FL25 2.5 t LPG forklift","IMP-KL-0001","001Hs00000ImpA1AAB","2025-03-14","Installed","forklift","2027-03-13"
+"02iHs00000ImpU2AAB","SC22 rotary screw compressor","IMP-BR-0002","001Hs00000ImpA1AAB","2024-07-01","Installed","compressor",""
+"02iHs00000ImpU3AAB","CR40 freezer condensing unit","IMP-SX-0003","001Hs00000ImpA2AAB","2023-11-20","Registered","refrigeration",""
